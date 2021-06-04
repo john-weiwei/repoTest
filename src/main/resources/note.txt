@@ -1,0 +1,71 @@
+
+需要重点关注的接口
+Aware
+    为了使用spring的功能
+FactoryBean
+	自己实现的FactoryBean
+	表示不会急于初始化这个bean（Desk），即使它是单例的
+	只有实际调用getObject方法才会进行初始化
+	总结：自己实现的FactoryBean<T> 中T对象的初始化动作不是spring来做，而是由开发人员处理。
+	这个接口在框架中被大量使用，例如aop，ProxyFactoryBean
+
+	为什么实现了FactoryBean的类不会执行getBean？
+      如果一个bean实现了这个接口，它就会被当成一个对象工厂来使用，而不是普通的bean实例，它的生命周期不归spring管，
+      调用getObject方法始终返回的是它创建的对象引用。
+BeanFactoryAware
+	bean生命周期接口，实现BeanFactoryAware接口可以获取其他的Bean信息，即一个bean可以通过实现BeanFactoryAware接口（beanFactory）查找协作bean（依赖查找）；可以认为这是获取依赖的bean的一种方式，但大多数bean会选择通过相应的bean属性或有参的构造函数获取bean的引用（依赖注入）
+BeanFactory
+	访问spring bean容器的顶层接口，里面有bean的生命周期方法
+
+
+问题点
+lite（CONFIGURATION_CLASS_LITE）、full（CONFIGURATION_CLASS_FULL）代表的是什么
+什么是ASM
+
+
+解析配置类
+ConfigurationClassParser
+	处理配置类以及它的超类，包括@Component、@PropertySource、@ComponentScan、@Import、@ImportResource、@Bean注解
+	->doProcessConfigurationClass
+
+post-processor在spring中的应用
+	ConfigurationClassPostProcessor
+
+
+
+bean的实例化过程
+	1、遍历注册bean的容器beanDefinitionNames，并判断是否是抽象类、是否懒加载、是否单例
+	2、判断是否实现FactoryBean接口，如果实现此接口，则该对象为对象工厂，不是普通bean实例，不会执行getBean方法；否则，执行getBean -> doGetBean
+	3、拿到规范的beanName到三级缓存中去找，第一次会返回null，三级缓存里面还没有对应的值
+	4、判断是否单例，调用createBean创建单例bean -> doCreateBean
+	5、寻找有@Autowired注解的构造参数
+		5.1、遍历bean的所有方法，检查是否有@Lookup注解，有的话，把方法method和注解的value值包装成LookupOverride，添加到MethodOverrides的Set容器中
+		5.2、双重检查candidateConstructorsCache容器中有没有，反射获取bean声明的所有构造函数
+		5.3、遍历所有构造函数，查找有@Autowired注解的构造函数，并封装成AnnotationAttributes存放到ArrayList容器
+		5.4、返回一个有@Autowired注解的构造函数数组
+    6、有参构造函数
+
+	x、调用instantiateBean无参构造函数实例化，封装成BeanWrapper
+
+
+	x1、调用applyMergedBeanDefinitionPostProcessors方法进行对象属性的注入，执行一系列的BeanPostProcessor
+		x1.1、收集该类以及父类的init、destroy方法，封装成LifecycleMetadata
+		x1.2、收集该类以及父类中带有注解的字段（@WebServiceRef、@EJB、@Resource）或者setter方法的注入信息，封装成InjectionMetadata
+		x1.3、收集收集该类以及父类中带有@Autowired注解的字段和方法，封装成InjectionMetadata
+	x2、判断bean是否允许提前暴露，如果允许，把它添加到三级缓存，从二级缓存移除
+	x3、执行populateBean方法，进行ioc依赖注入
+	x4、执行initializeBean方法，完成bean实例化，以及实例化是否采用代理aop的操作等
+	    x4.1、initializeBean ->
+	    applyBeanPostProcessorsBeforeInitialization
+	    调用一系列初始化之前的处理器postProcessBeforeInitialization，包括执行Aware接口、init方法、afterPropertiesSet方法等
+	    x4.2、调用一系列初始化之后的处理器postProcessAfterInitialization，返回bean实例
+	x5、销毁bean，ContextLoaderListener -> contextDestroyed 销毁bean由Web容器去做，例如Tomcat
+
+
+
+
+
+
+
+
+

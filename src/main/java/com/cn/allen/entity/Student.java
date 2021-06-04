@@ -1,6 +1,7 @@
 package com.cn.allen.entity;
 
 import lombok.Data;
+import lombok.ToString;
 import org.springframework.stereotype.Component;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @Data
+@ToString
 public class Student {
 
     private String name = "lisi";

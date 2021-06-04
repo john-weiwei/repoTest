@@ -3,6 +3,8 @@ package com.cn.allen.test;
 import com.cn.allen.entity.Student;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -15,12 +17,22 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 //@RunWith(SpringJUnit4ClassRunner.class)
 public class BeanTest {
 
+    private Logger log = LoggerFactory.getLogger(BeanTest.class);
+
     @Test
     public void test1() {
         AnnotationConfigApplicationContext applicationContext =
                 new AnnotationConfigApplicationContext("com.cn.allen.entity");
         Student student = (Student) applicationContext.getBean("student");
-        System.out.println(student.getName());
+        log.info(student.getName());
+    }
+
+    @Test
+    public void test2() throws ClassNotFoundException {
+        Class clazz = Student.class;
+        Class refClazz = Class.forName(Student.class.getName());
+        System.out.println(clazz);
+        System.out.println(refClazz);
     }
 
 }
