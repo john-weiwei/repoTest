@@ -1,4 +1,17 @@
 
+注册bean到spring容器，bean实例化之前的准备工作
+AnnotationConfigApplicationContext扫描指定包路径bean的过程
+	1、包路径转换成绝对路径 classpath*:com/cn/allen/entity/**/*.class
+	2、递归查找路径下的所有class文件（FileSystem文件系统）findCandidateComponents方法最终会递归查找路径下的所有class文件
+	3、遍历class文件，包装成SimpleMetadataReader（通过字节流的方式读取class文件）
+	4、判断类上面是否有@Component注解（所有的注解都有@Component），如果有，封装成BeanDefinition放入Set容器，否则不做任何处理；如果打开debug模式的话，会提示用户这个类被忽视了，也就是说它的生命周期不交给spring管理
+	5、遍历Set容器中的BeanDefinition，设置bean基本属性值，包括作用域、是否懒加载、自动注入类型、依赖检查等
+	6、检测bean是否beanDefinitionMap容器中，如果不存在，则把BeanDefinition包装成BeandDefinitionHolder，注册到beanDefinitionMap容器
+
+
+
+
+
 需要重点关注的接口
 Aware
     为了使用spring的功能
