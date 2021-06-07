@@ -4,7 +4,8 @@ AnnotationConfigApplicationContext扫描指定包路径bean的过程
 	1、包路径转换成绝对路径 classpath*:com/cn/allen/entity/**/*.class
 	2、递归查找路径下的所有class文件（FileSystem文件系统）findCandidateComponents方法最终会递归查找路径下的所有class文件
 	3、遍历class文件，包装成SimpleMetadataReader（通过字节流的方式读取class文件）
-	4、判断类上面是否有@Component注解（所有的注解都有@Component），如果有，封装成BeanDefinition放入Set容器，否则不做任何处理；如果打开debug模式的话，会提示用户这个类被忽视了，也就是说它的生命周期不交给spring管理
+	4、判断类上面是否有@Component注解（所有的注解都有@Component），如果有，封装成BeanDefinition放入Set容器，否则不做任何处理；
+	如果打开debug模式的话，会提示用户这个类被忽视了，也就是说它的生命周期不交给spring管理
 	5、遍历Set容器中的BeanDefinition，设置bean基本属性值，包括作用域、是否懒加载、自动注入类型、依赖检查等
 	6、检测bean是否beanDefinitionMap容器中，如果不存在，则把BeanDefinition包装成BeandDefinitionHolder，注册到beanDefinitionMap容器
 
@@ -56,23 +57,38 @@ bean的实例化过程
 		5.2、双重检查candidateConstructorsCache容器中有没有，反射获取bean声明的所有构造函数
 		5.3、遍历所有构造函数，查找有@Autowired注解的构造函数，并封装成AnnotationAttributes存放到ArrayList容器
 		5.4、返回一个有@Autowired注解的构造函数数组
-    6、有参构造函数
-
-	x、调用instantiateBean无参构造函数实例化，封装成BeanWrapper
-
-
-	x1、调用applyMergedBeanDefinitionPostProcessors方法进行对象属性的注入，执行一系列的BeanPostProcessor
-		x1.1、收集该类以及父类的init、destroy方法，封装成LifecycleMetadata
-		x1.2、收集该类以及父类中带有注解的字段（@WebServiceRef、@EJB、@Resource）或者setter方法的注入信息，封装成InjectionMetadata
-		x1.3、收集收集该类以及父类中带有@Autowired注解的字段和方法，封装成InjectionMetadata
-	x2、判断bean是否允许提前暴露，如果允许，把它添加到三级缓存，从二级缓存移除
-	x3、执行populateBean方法，进行ioc依赖注入
-	x4、执行initializeBean方法，完成bean实例化，以及实例化是否采用代理aop的操作等
-	    x4.1、initializeBean ->
-	    applyBeanPostProcessorsBeforeInitialization
+    6、如果找到有@Autowired注解的构造函数，则调用autowireConstructor方法解析有@Autowired注解的构造方法
+    (至少有一个符合Autowired候选条件的bean，即至少要有一个@Autowired注解的构造函数上有bean的引用，并且不能有基本数据类型)
+        6.1、参数解析（涉及循环依赖——三级缓存），反射实例化构造函数
+	7、否则，没有@Autowired注解或有多个构造函数并且没有此注解的情况下，调用instantiateBean无参构造函数实例化，封装成BeanWrapper
+	（只有一个有参构造函数并且没有注解的情况下会被缓存到candidateConstructorsCache构造函数容器中，当成有注解来处理）
+	8、调用applyMergedBeanDefinitionPostProcessors方法进行对象属性的注入，执行一系列的BeanPostProcessor
+		8.1、收集该类以及父类的init、destroy方法，封装成LifecycleMetadata
+		8.2、收集该类以及父类中带有注解的字段（@WebServiceRef、@EJB、@Resource）或者setter方法的注入信息，封装成InjectionMetadata
+		8.3、收集收集该类以及父类中带有@Autowired注解的字段和方法，封装成InjectionMetadata
+	9、判断bean是否允许提前暴露，如果允许，把它添加到三级缓存，从二级缓存移除
+	10、执行populateBean方法，进行ioc依赖注入
+	    10.1、调用一系列的postProcessProperties方法，收集有该类以及父类中带有@Autowired注解和公共注解（@WebServiceRef、@EJB、@Resource）的字段和方法，
+	    封装成InjectionMetadata对象，调用inject方法实现字段赋值（最终会调到getBean方法，获取实例对象）以及方法的调用，完成ioc注入
+	11、执行initializeBean方法，完成bean实例化，以及实例化是否采用代理aop的操作等
+	    11.1、initializeBean -> applyBeanPostProcessorsBeforeInitialization
 	    调用一系列初始化之前的处理器postProcessBeforeInitialization，包括执行Aware接口、init方法、afterPropertiesSet方法等
-	    x4.2、调用一系列初始化之后的处理器postProcessAfterInitialization，返回bean实例
-	x5、销毁bean，ContextLoaderListener -> contextDestroyed 销毁bean由Web容器去做，例如Tomcat
+	    11.2、调用一系列初始化之后的处理器postProcessAfterInitialization，返回bean实例（代理实例）
+	12、销毁bean，ContextLoaderListener -> contextDestroyed 销毁bean由Web容器去做，例如Tomcat
+
+aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解，则返回的是代理实例）
+    1、加上@EnableAspectJAutoProxy开启aop
+    2、执行AbstractAutoProxyCreator -> getAdvicesAndAdvisorsForBean得到所有的切面
+        2.1、程序启动时，扫描所有的bean实例，遍历判断bean上是否有@Aspect注解（beanFactory是DefaultListableBeanFactory）
+        2.2、如果有，调用ReflectiveAspectJAdvisorFactory -> getAdvisors 收集该bean上的所有Advisor
+        2.3、拿到切面类和切面名称，获取该类的除了@PointCut注解以外的所有增强方法
+        2.4、遍历所有增强方法，根据增强方法上的切点方法获取到对应的表达式，封装成AspectJExpressionPointCut对象
+        2.5、切点表达式不为null的情况下，把增强方法和对应的切点表达式封装成Advisor（InstantiationModelAwarePointcutAdvisorImpl）
+    3、执行AbstractAutoProxyCreator -> createProxy，创建代理
+        3.1、创建代理工厂，调用buildAdvisors方法构建指定的以及公共的切面类
+        3.2、getProxy通过代理工厂创建代理，选择是jdk动态代理，还是cglib动态代理
+        3.3、创建Enhancer（增强类，即代理类）对象实例，配置代理类
+        3.4、使用反射创建代理实例，并返回
 
 
 
@@ -80,5 +96,11 @@ bean的实例化过程
 
 
 
+
+
+
+
+
+问题：
 
 
