@@ -2,6 +2,7 @@ package com.cn.allen.entity;
 
 import lombok.Data;
 import lombok.ToString;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -17,4 +18,5 @@ public class Student {
     private String name = "lisi";
 
     private int age = 11;
+
 }

@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
  *     如果一个bean实现了这个接口，它就会被当成一个对象工厂来使用，而不是普通的bean实例，它的生命周期不归spring管，
  *     调用getObject方法始终返回的是它创建的对象引用。
  */
-@Service
+//@Service
 public class FactoryBeanDemo implements FactoryBean<Desk> , BeanFactoryAware {
 
     private Logger log = LoggerFactory.getLogger(FactoryBeanDemo.class);

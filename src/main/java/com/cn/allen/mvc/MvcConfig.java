@@ -12,7 +12,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * @Description:
  */
 @Configuration
-@EnableWebMvc
+//单元测试需要关闭此注解
+//@EnableWebMvc
 public class MvcConfig implements WebMvcConfigurer {
 
     @Override

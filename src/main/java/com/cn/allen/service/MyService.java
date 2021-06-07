@@ -1,5 +1,7 @@
 package com.cn.allen.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -8,8 +10,12 @@ import org.springframework.stereotype.Service;
  * @Description:
  */
 @Service
-public class MyService {
+public class MyService implements TransactionService{
 
+    private Logger log = LoggerFactory.getLogger(MyService.class);
 
-
+    @Override
+    public void search() {
+        log.info("查询数据");
+    }
 }

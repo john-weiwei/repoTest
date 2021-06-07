@@ -1,5 +1,6 @@
 package com.cn.allen.test;
 
+import com.cn.allen.entity.Chair;
 import com.cn.allen.entity.Student;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,8 +24,10 @@ public class BeanTest {
     public void test1() {
         AnnotationConfigApplicationContext applicationContext =
                 new AnnotationConfigApplicationContext("com.cn.allen.entity");
-        Student student = (Student) applicationContext.getBean("student");
-        log.info(student.getName());
+//        Student student = (Student) applicationContext.getBean("student");
+//        log.info(student.getName());
+        Chair chair = (Chair) applicationContext.getBean("chair");
+        System.out.println(chair.toString());
     }
 
     @Test
