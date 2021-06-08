@@ -9,4 +9,6 @@ import org.springframework.stereotype.Repository;
  */
 public interface TransactionService {
     void search();
+
+    void add(String msg);
 }

@@ -17,7 +17,6 @@ public class Teacher {
 
     private int age;
 
-    @Autowired
     public Teacher(String name, int age) {
         this.name = name;
         this.age = age;
@@ -25,5 +24,8 @@ public class Teacher {
 
     public Teacher(String name) {
         this.name = name;
+    }
+
+    public Teacher() {
     }
 }

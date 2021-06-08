@@ -33,4 +33,10 @@ public class AopTest {
         TransactionService transactionService = applicationContext.getBean(TransactionService.class);
         transactionService.search();
     }
+
+    @Test
+    public void aopTest2() {
+        TransactionService transactionService = applicationContext.getBean(TransactionService.class);
+        transactionService.add("hello");
+    }
 }

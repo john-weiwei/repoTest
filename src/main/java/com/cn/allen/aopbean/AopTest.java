@@ -37,20 +37,20 @@ public class AopTest {
     }
 
     /**
-     * 拦截所有的controller
+     * 拦截所有的业务调用
      */
-    @Pointcut("execution(* com.cn.allen.service.*.*(..))")
-    public void interceptorService() {
-
-    }
-
-    @After("interceptorService()")
-    public void afterAdvisorService() {
-        log.info("拦截service的after增强");
-    }
-
-    @Before("interceptorService()")
-    public void beforeAdvisorService() {
-        log.info("拦截service业务前被增强了");
-    }
+//    @Pointcut("execution(* com.cn.allen.service.*.*(..))")
+//    public void interceptorService() {
+//
+//    }
+//
+//    @After("interceptorService()")
+//    public void afterAdvisorService() {
+//        log.info("拦截service的after增强");
+//    }
+//
+//    @Before("interceptorService()")
+//    public void beforeAdvisorService() {
+//        log.info("拦截service业务前被增强了");
+//    }
 }

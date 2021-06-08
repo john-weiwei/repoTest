@@ -14,6 +14,8 @@ AnnotationConfigApplicationContext扫描指定包路径bean的过程
 
 
 需要重点关注的接口
+Advisor
+
 Aware
     为了使用spring的功能
 FactoryBean
@@ -83,13 +85,33 @@ aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解�
         2.2、如果有，调用ReflectiveAspectJAdvisorFactory -> getAdvisors 收集该bean上的所有Advisor
         2.3、拿到切面类和切面名称，获取该类的除了@PointCut注解以外的所有增强方法
         2.4、遍历所有增强方法，根据增强方法上的切点方法获取到对应的表达式，封装成AspectJExpressionPointCut对象
-        2.5、切点表达式不为null的情况下，把增强方法和对应的切点表达式封装成Advisor（InstantiationModelAwarePointcutAdvisorImpl）
+        2.5、切点表达式不为null的情况下，把增强方法和对应的切点表达式封装成Advisor（InstantiationModelAwarePointcutAdvisorImpl），保存到ArrayList容器中返回
     3、执行AbstractAutoProxyCreator -> createProxy，创建代理
-        3.1、创建代理工厂，调用buildAdvisors方法构建指定的以及公共的切面类
-        3.2、getProxy通过代理工厂创建代理，选择是jdk动态代理，还是cglib动态代理
-        3.3、创建Enhancer（增强类，即代理类）对象实例，配置代理类
+        3.1、首先创建代理工厂，调用buildAdvisors方法构建指定的以及公共的切面类
+        3.2、通过代理工厂getProxy方法创建代理，选择是jdk动态代理，还是cglib动态代理
+        3.3、如果是jdk动态代理，获取代理接口，查找代理接口中定义的equals和hashCode方法，使用反射创建代理实例并返回；
+        如果是cglib动态代理，创建Enhancer（增强类，即代理类）对象实例，配置代理类
         3.4、使用反射创建代理实例，并返回
+    4、调用tranService.search()会执行到JdkDynamicAopProxy的invoke方法，通过MyService的代理对象调用实际的方法
+        4.1、拿到这个方法的拦截器链
+            4.1.1、获取所有的切面，遍历切面，如果PointcutAdvisor，判断目标类跟切点表达式是否匹配
+            4.1.2、如果匹配的话，拿到切点表达式对应的advice，遍历由MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter
+            组成的增强适配器容器，如果类型匹配的话，则将advice包装成对应的拦截器保存到拦截器容器中
+            4.1.3、如果是其他的拦截器（CacheInterceptor、AspectJAroundAdviceInterceptor等），则添加到拦截拦截器容器
+        4.2、返回拦截器链
+    #5、把被调用的method方法封装成MethodCacheKey作为key，拦截器链作为value，保存到methodCache容器（缓存）
+    6、创建方法调用对象ReflectiveMethodInvocation，执行proceed方法（链式调用的拦截器上的invoke方法）
+    7、最后执行目标方法
 
+    五种增强：Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
+
+事务执行流程
+
+
+设计模式
+    适配器模式
+    委托模式
+    模板方法模式
 
 
 
