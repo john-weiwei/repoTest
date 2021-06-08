@@ -40,7 +40,7 @@ lite（CONFIGURATION_CLASS_LITE）、full（CONFIGURATION_CLASS_FULL）代表的
 
 
 解析配置类
-ConfigurationClassParser
+ConfigurationClassParser(在invokeBeanFactoryPostProcessors()方法注册)
 	处理配置类以及它的超类，包括@Component、@PropertySource、@ComponentScan、@Import、@ImportResource、@Bean注解
 	->doProcessConfigurationClass
 
@@ -106,6 +106,14 @@ aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解�
     五种增强：Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
 
 事务执行流程
+    1、spring事务采用aop的方式实现的（事务对象指的就是DataSourceTransactionObject）
+    2、调用createTransactionIfNecessary方法创建事务
+        2.1、第一次调用会新建一个事务状态newTransactionStatus
+        2.2、DataSourceTransactionManager -> doBegin()开启事务
+            2.2.1、从连接池中获取连接，并将连接包装成ConnectionHolder对象
+            2.2.2、关闭自动提交，如果事务设置为只读的话，会执行"SET TRANSACTION READ ONLY"语句，说明这是只读事务
+            2.2.3、如果是新建的连接，会把数据源dataSource（key）和连接对象connectionHolder（value）绑定到ThreadLocal中（ThreadLocal<Map<Object, Object>>）
+        2.3、初始化事务同步prepareSynchronization，设置实际事务状态、隔离级别、当前事务是否只读、事务名称等，返回事务状态
 
 
 设计模式
