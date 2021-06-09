@@ -7,4 +7,6 @@ package com.cn.allen.service;
  */
 public interface CommonService {
     void conn();
+
+    void addPerson();
 }

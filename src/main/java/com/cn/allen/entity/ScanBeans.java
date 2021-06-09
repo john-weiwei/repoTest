@@ -3,6 +3,8 @@ package com.cn.allen.entity;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Controller;
+import org.springframework.stereotype.Repository;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,6 +14,6 @@ import org.springframework.stereotype.Service;
  */
 @Service
 //@ComponentScan(excludeFilters = {@ComponentScan.Filter(type = FilterType.ANNOTATION,classes = {ComponentScan.class})})
-@ComponentScan("com.cn")
+@ComponentScan(value = "com.cn")
 public class ScanBeans {
 }

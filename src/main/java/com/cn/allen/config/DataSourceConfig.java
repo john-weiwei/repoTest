@@ -16,7 +16,6 @@ import java.beans.PropertyVetoException;
  * @Date:2021/6/8
  * @Description:
  */
-@Component
 @Configuration
 @PropertySource("classpath:config/core.properties")
 public class DataSourceConfig {
