@@ -7,7 +7,7 @@ AnnotationConfigApplicationContext扫描指定包路径bean的过程
 	4、判断类上面是否有@Component注解（所有的注解都有@Component），如果有，封装成BeanDefinition放入Set容器，否则不做任何处理；
 	如果打开debug模式的话，会提示用户这个类被忽视了，也就是说它的生命周期不交给spring管理
 	5、遍历Set容器中的BeanDefinition，设置bean基本属性值，包括作用域、是否懒加载、自动注入类型、依赖检查等
-	6、检测bean是否beanDefinitionMap容器中，如果不存在，则把BeanDefinition包装成BeandDefinitionHolder，注册到beanDefinitionMap容器
+	6、检测bean是否beanDefinitionMap容器中，如果不存在，则把BeanDefinition包装成BeanDefinitionHolder，注册到beanDefinitionMap容器
 
 
 
@@ -80,7 +80,7 @@ bean的实例化过程
 	    11.2、调用一系列初始化之后的处理器postProcessAfterInitialization，返回bean实例（代理实例）
 	12、销毁bean，ContextLoaderListener -> contextDestroyed 销毁bean由Web容器去做，例如Tomcat
 
-aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解，则返回的是代理实例）
+aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解，则返回的是代理实例;aop入口AbstractAutowiredCapableBeanFactory->postProcessAfterInitialization）
     1、加上@EnableAspectJAutoProxy开启aop
     2、执行AbstractAutoProxyCreator -> getAdvicesAndAdvisorsForBean得到所有的切面
         2.1、程序启动时，扫描所有的bean实例，遍历判断bean上是否有@Aspect注解（beanFactory是DefaultListableBeanFactory）
@@ -99,18 +99,22 @@ aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解�
             4.1.1、获取所有的切面，遍历切面，如果PointcutAdvisor，判断目标类跟切点表达式是否匹配
             4.1.2、如果匹配的话，拿到切点表达式对应的advice，遍历由MethodBeforeAdviceAdapter、AfterReturningAdviceAdapter、ThrowsAdviceAdapter
             组成的增强适配器容器，如果类型匹配的话，则将advice包装成对应的拦截器保存到拦截器容器中
-            4.1.3、如果是其他的拦截器（CacheInterceptor、AspectJAroundAdviceInterceptor等），则添加到拦截拦截器容器
+            4.1.3、如果是其他的拦截器（CacheInterceptor、AspectJAroundAdviceInterceptor等，继承了MethodInterceptor接口），则添加到拦截拦截器容器
         4.2、返回拦截器链
     #5、把被调用的method方法封装成MethodCacheKey作为key，拦截器链作为value，保存到methodCache容器（缓存）
     6、创建方法调用对象ReflectiveMethodInvocation，执行proceed方法（链式调用的拦截器上的invoke方法）
-    7、最后执行目标方法
+    7、最后执行目标方法，完成整个的执行流程
 
     五种增强：Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class
 
 事务执行流程
-    1、spring事务采用aop的方式实现的（事务对象指的就是DataSourceTransactionObject）
+    1、spring事务采用aop的方式实现的（事务对象指的就是DataSourceTransactionObject，在TransactionInterceptor完成调用）
     2、TransactionAspectSupport -> invokeWithinTransaction() 调用createTransactionIfNecessary方法创建事务
         2.0、调用doGetTransaction方法获取事务对象DataSourceTransactionObject
+            2.0.1、如果存在事务，调用AbstractPlatformTransactionManager -> handleExistingTransaction()方法为现有事务创建事务状态
+            2.0.2、根据相应的事务传播特性做相应的处理，如果是PROPAGATION_REQUIRES_NEW，会调用suspend() -> doSuspend()方法将当前事务挂起，
+            把事务对象中的连接对象设置为null，解除数据源和连接对象的绑定关系
+            2.0.3、默认新启一个事务
         2.1、第一次调用会新建一个事务状态newTransactionStatus，默认事务传播特性是PROPAGATION_REQUIRED（如果没有事务，则新建；若已存在事务，则加入到此事务）
         2.2、DataSourceTransactionManager -> doBegin()开启事务
             2.2.1、从连接池中获取连接，并将连接包装成ConnectionHolder对象
@@ -122,28 +126,42 @@ aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解�
     4、执行环绕增强 invocation.proceedWithInvocation()，执行目标方法
     5、TransactionAspectSupport -> commitTransactionAfterReturning 提交事务
         5.1、执行AbstractPlatformTransactionManager -> commit 方法，如果本地需要回滚，则调用processRollback方法进行回滚；否则调用processCommit处理实际的提交
-            5.1.1、那么调用processCommit方法，如果是新建事务，执行doCommit方法，拿到数据库连接，执行真正的commit方法完成提交操作
+            5.1.1、那么调用processCommit方法，如果有回滚点，要清除回滚点；如果是新建事务，执行doCommit方法，拿到数据库连接，执行真正的commit方法完成提交操作
                 5.1.1.1、执行AbstractPlatformTransactionManager -> cleanupAfterCompletion方法，清除当前线程的事务同步状态
                 5.1.1.2、如果是新建事务，调用DataSourceTransactionManager -> doCleanupAfterCompletion方法释放资源，
                 TransactionSynchronizationManager.unbindResource -> doUnbindResource 将数据源DataSource和连接对象ConnectionHolder解除绑定关系，返回连接对象
-                5.1.1.3、重置连接，包括恢复连接的自动提交、默认隔离级别以及是否只读等
+                5.1.1.3、重置连接，包括恢复连接的自动提交、默认隔离级别以及是否只读等属性
                 5.1.1.4、调用DataSourceUtils -> releaseConnection -> doReleaseConnection方法释放连接，最终会调用close方法关闭连接
                 5.1.1.5、修改事务活动状态，清除保存点
-             5.1.2、如果出现异常，并且设置了回滚异常参数，将调用TransactionAspectSupport -> completeTransactionAfterThrowing方法处理
+                5.1.1.6、如果有挂起的连接（资源），调用resume(transaction,suspendedResourceHolder) -> doResume() 方法恢复数据源和连接的绑定关系
+                5.1.1.7、重新恢复事务状态、隔离级别、事务名称、是否只读等属性；重新激活当前线程的事务同步
+             5.1.2、如果出现异常，将调用TransactionAspectSupport -> completeTransactionAfterThrowing方法处理
                 5.1.2.1、执行AbstractPlatformTransactionManager -> rollback -> processRollback 方法进行事务回滚
                 5.1.2.2、执行TransactionSynchronizationUtils -> triggerBeforeCompletion方法，SqlSessionUtils -> beforeCompletion方法，调到unbindResource，解除数据源和连接对象的绑定关系
                 5.1.2.3、如果是新建事务，调用doRollback()获取连接对象Connection，调用数据库连接对象的回滚方法进行回滚
-                5.1.2.4、执行5.1.1.x（x表示1，2，3，4，5） 的处理逻辑释放资源
-                5.1.2.5、抛出异常
+                    5.1.2.3.1、执行5.1.1.x（x表示1，2，3，4，5） 的处理逻辑释放资源
+                    5.1.2.3.2、抛出异常
+                5.1.2.4、如果有保存点（回滚点），即出异常的事务是嵌套事务，执行AbstractTransactionStatus -> rollbackToHeldSavepoint()方法回滚到指定的保存点
+                    5.1.2.4.1、调用getSavepoint()方法获取保存点，执行JdbcTransactionObjectSupport -> rollbackToSavepoint()方法，
+                    最终执行数据库连接的rollback()方法回滚到指定的保存点
+                    5.1.2.4.2、调用releaseSavepoint()方法释放保存，并设置事务状态对象的保存点为null；总结：调用rollbackToSavepoint回滚之后，执行releaseSavepoint释放保存点
+                5.1.2.5、执行5.1.1.x（x表示1，2，3，4，5） 的处理逻辑释放资源
 
-事务的挂起就是将前一个事务对象的属性值设置为默认，事务名称、事务隔离级别置为null，并封装成SuspendedResourcesHolder对象
+
+事务的挂起调用suspend(transaction)方法就是将当前事务对象的属性值设置为默认，事务名称、事务隔离级别、连接对象置为null，并封装成SuspendedResourcesHolder对象
 
 事务隔离级别
     PROPAGATION_REQUIRES_NEW：如果存在外层事务，则将事务挂起，新建一个事务
+        如果存在事务，那么将调用suspend(transaction)挂起事务，连接对象置为null，解除数据源和连接的绑定关系，返回旧连接对象包装成SuspendedResourcesHolder对象。
+     使用旧连接对象重新创建事务状态，返回新的事务
     PROPAGATION_REQUIRED：如果不存在外层事务，则新建事务；存在，则使用当前事务
     PROPAGATION_SUPPORTS：支持当前事务，如果不存在事务，则已非事务方式执行
-    SUPPORTS和REQUIRED的共同点都是如果存在事务，就使用当前事务
+    #SUPPORTS和REQUIRED的共同点都是如果存在事务，就使用当前事务
     PROPAGATION_MANDATORY：支持当前事务，如果不存在事务，则抛出异常
+    PROPAGATION_NOT_SUPPORTED：不支持事务，如果存在事务，则挂起
+    PROPAGATION_NEVER：不使用事务，如果存在事务，则抛出异常
+    PROPAGATION_NESTED：如果存在事务，则在嵌套事务内执行设置保存点；如果不存在事务，则新建事务，执行与PROPAGATION_REQUIRED类似的操作
+        如果存在事务，使用当前事务创建一个新的事务状态，并设置保存点
 
 
 设计模式

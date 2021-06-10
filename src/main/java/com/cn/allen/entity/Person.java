@@ -2,6 +2,8 @@ package com.cn.allen.entity;
 
 import lombok.Data;
 
+import java.sql.Date;
+
 /**
  * @Author:ZhangWeiWei
  * @Date:2021/6/9
@@ -15,5 +17,7 @@ public class Person {
     private String name;
 
     private Integer age;
+
+    private Date gmtCreate;
 
 }

@@ -1,5 +1,6 @@
 package com.cn.allen.service;
 
+import ch.qos.logback.core.encoder.EchoEncoder;
 import com.alibaba.fastjson.JSON;
 import com.cn.allen.entity.Goods;
 import com.cn.allen.mapper.CommonMapper;
@@ -29,19 +30,24 @@ public class MyService implements TransactionService{
     @Autowired
     private CommonMapper commonMapper;
 
+    @Autowired
+    private TransactionService transactionService;
+
     @Transactional(propagation = Propagation.REQUIRED)
     @Override
     public void search() {
-        commonService.addPerson();
+        //@Transactional(propagation = Propagation.REQUIRED)
+        transactionService.add("X60");
+        //@Transactional(propagation = Propagation.REQUIRES_NEW)
+        commonService.addPerson();//addPerson 方法抛运行时异常
         log.info("查询数据");
         List<Goods> goods = commonMapper.queryGoods();
         log.info("返回的数据：{}",JSON.toJSONString(goods));
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRED)
     @Override
     public void add(String msg) {
-        commonService.conn();
         log.info("添加数据：{}",msg);
         Goods goods = new Goods();
         goods.setGoodCode("1234456");

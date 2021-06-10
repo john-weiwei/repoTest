@@ -28,14 +28,19 @@ public class CommonServiceImpl implements CommonService {
         log.info("连接数据库");
     }
 
-    @Transactional(propagation = Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.NESTED)
     @Override
-    public void addPerson(){
-        log.info("添加人员");
-        Person person = new Person();
-        person.setName("Allen");
-        person.setAge(23);
-        int result = commonMapper.addPerson(person);
-        log.info("添加人员成功:{}",result);
+    public void addPerson() {
+//        try {
+            log.info("添加人员");
+            Person person = new Person();
+            person.setName("Allen");
+            person.setAge(23);
+            int result = commonMapper.addPerson(person);
+            log.info("添加人员成功:{}", result);
+            throw new RuntimeException("手动抛运行时异常");
+//        } catch (Exception e) {
+//            log.info("捕获异常");
+//        }
     }
 }
