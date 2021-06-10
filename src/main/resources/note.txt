@@ -164,18 +164,34 @@ aop流程（aop代理在bean完成实例化之后进行;如果有@Aspect注解�
         如果存在事务，使用当前事务创建一个新的事务状态，并设置保存点
 
 
+springMvc调用流程（SpringServletContainerInitializer）
+    1、SpringServletContainerInitializer会在启动时被servlet容器实例化，并调用onStartup()方法，而且servlet容器
+    收集实现了@HandlesTypes注解里面的接口的类，并且作为入参传入onStartup方法中，通过获取set容器中类就可以反射调用接口里面的方法，
+    这就是servlet规范
+    2、调用onStartup方法完成spring容器和mvc容器的注册
+        2.1、执行registerContextLoaderListener()方法，完成上下文监听器的注册
+            2.1.1、调用createRootApplicationContext方法创建Web应用程序上下文对象AnnotationConfigWebApplicationContext（root，父容器），
+            注册spring容器配置类到注解容器annotatedClasses中
+            2.1.2、创建监听器ContextLoaderListener监听Web应用程序上下文对象
+            2.1.3、注册监听器到servlet容器
+        2.2、执行registerDispatcherServlet()方法，注册DispatcherServlet
+            2.2.1、调用createServletApplicationContext方法创建Web应用程序上下文对象AnnotationConfigWebApplicationContext（sub，子容器），
+            注册mvc容器配置类到注解容器annotatedClasses（LinkedHashSet）中
+            2.2.2、执行createDispatcherServlet方法创建DispatcherServlet对象，注册servlet、设置启动顺序、添加映射url、设置是否异步处理，
+            如果有过滤器的话，注册过滤器
+            2.2.3、调用customizeRegistration方法可以在registerDispatcherServlet()执行完成后执行进一步的定制
+
+
+
+
+
+
+
 设计模式
     适配器模式
     委托模式
     模板方法模式
-
-
-
-
-
-
-
-
+    门面模式：Tomcat启动servlet容器
 
 
 
