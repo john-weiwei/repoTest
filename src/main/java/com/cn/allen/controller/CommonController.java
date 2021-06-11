@@ -21,8 +21,9 @@ public class CommonController {
 
 
     @RequestMapping("success")
+    @ResponseBody
     public String success() {
-        return "index";
+        return "success";
     }
 
 }

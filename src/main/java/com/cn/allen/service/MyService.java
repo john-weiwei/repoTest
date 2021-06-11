@@ -37,12 +37,17 @@ public class MyService implements TransactionService{
     @Override
     public void search() {
         //@Transactional(propagation = Propagation.REQUIRED)
-        transactionService.add("X60");
+//        transactionService.add("X60");
         //@Transactional(propagation = Propagation.REQUIRES_NEW)
-        commonService.addPerson();//addPerson 方法抛运行时异常
+//        commonService.addPerson();//addPerson 方法抛运行时异常
         log.info("查询数据");
         List<Goods> goods = commonMapper.queryGoods();
         log.info("返回的数据：{}",JSON.toJSONString(goods));
+        log.info("添加数据：");
+        Goods good = new Goods();
+        good.setGoodCode("1234456");
+        good.setGoodName("vivoX60Pro");
+        commonMapper.addGoods(good);
     }
 
     @Transactional(propagation = Propagation.REQUIRED)
