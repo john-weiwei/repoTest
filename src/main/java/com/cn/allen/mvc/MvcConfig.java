@@ -23,6 +23,6 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void configureViewResolvers(ViewResolverRegistry registry) {
-        registry.jsp("/jsp",".jsp");
+        registry.jsp("/jsp/",".jsp");
     }
 }

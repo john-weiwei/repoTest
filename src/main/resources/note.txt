@@ -187,7 +187,7 @@ springMvc调用流程（SpringServletContainerInitializer，spi的思想）
         3.4、调用customizeContext()方法自定义上下文，执行determineContextInitializerClasses()收集声明的上下文初始化类，
         如果有，遍历解析参数类，排序，执行initialize方法完成初始化
         3.5、执行AbstractApplicationContext -> refresh方法，加载或刷新配置，可以是xml文件、属性文件或者关系数据库，这是一个启动
-        方法，如果失败，它应该销毁已经创建的单例，以避免资源的挂起。换句话说，调用这个方法之后，要么全部实例，要么都实例化。即开始bean的实例化
+        方法，如果失败，它应该销毁已经创建的单例，以避免资源的挂起。换句话说，调用这个方法之后，要么全部实例化，要么都不实例化。即开始bean的实例化
         流程
         3.6、完成Spring容器（Spring容器）的启动
     4、SpringMvc的入口类是DispatcherServlet，调用到HttpServletBean -> init()方法将配置参数映射到这个servlet的bean属性上，并且
@@ -214,6 +214,30 @@ springMvc调用流程（SpringServletContainerInitializer，spi的思想）
                 6.1.10.1、执行createHandlerMethod方法创建HandlerMethod对象
                 6.1.10.2、收集类以及方法上的@CrossOrigin的注解，执行updateCorsConfig方法添加请求来源，http方法，以及其他的请求头
                 6.1.10.3、执行applyPermitDefaultValues方法应用cors的默认值
+            6.1.11、添加映射和处理程序到注册表registry容器
+     7、SpringMvc的执行过程，http请求会先执行HttpServlet -> service方法，根据请求方式调用对应的do*方法
+        7.0、执行DispatcherServlet -> processRequest -> doService方法将DispatcherServlet的请求属性和委托公开给doDispatcher进行实际的调度
+            7.0.1、执行到DispatcherServlet -> doDispatcher方法，主核心方法
+        7.1、调用getHandler方法，确定当前请求的处理程序，最终调用getHandlerInternal方法，先获取查找的路径lookupPath：/common/success，
+        执行AbstractHandlerMethodMapping -> lookupHandlerMethod方法为当前请求寻找最佳匹配的处理程序，封装成HandlerMethod对象返回
+        7.2、执行AbstractHandlerMapping -> getHandlerExecutionChain(handlerMethod,request)方法当前处理程序的执行链，并返回
+        7.3、执行DispatcherServlet -> getHandlerAdapter方法获取处理器适配器
+        7.4、执行真正的处理器AbstractHandlerMethodAdapter -> handle -> handleInternal()方法，调用处理程序方法invokeHandlerMethod
+        进行数据绑定，model初始化
+        7.5、调用ServletInvocationHandlerMethod -> invokeForRequest方法，最终调用到doInvoke()方法通过动态代理执行目标方法，得到视图名称
+        7.6、执行handlerReturnValue方法处理返回值，并且给ModelAndViewContainer对象设置视图名称
+        7.7、执行RequestMappingHandlerAdapter -> getModelAndView()方法获取ModelAndView模型视图对象
+        7.8、调用HandlerExecutionChain -> applyPostHandle方法执行注册的拦截器postHandle方法
+        7.9、调用DispatcherServlet -> processDispatcherResult方法处理处理程序选择和处理程序调用的结果，可以是ModelAndView或者Exception
+        7.10、执行DispatcherServlet -> render -> resolveViewName方法进行视图解析拿到视图对象View
+        7.11、执行AbstractView -> render()方法准备给定指定模型的视图，与静态属性和RequestContext属性进行合并
+        7.12、调用AbstractView -> prepareResponse方法准备响应头
+        7.13、调用InternalResourceView -> renderMergedOutputModel方法渲染指定模型的内部资源，包括将模型设置为请求属性
+        7.14、执行ApplicationDispatcher -> forward -> doForward()方法将此请求和响应转发给另一个资源去处理，请求完成
+        7.15、资源的释放
+
+SpringMvc的执行过程：访问url（..../common/success）先执行ApplicationFilterChain -> doFilter()过滤器方法，再执行到
+HttpServlet -> service方法
 
 SpringMvc核心类WebMvcConfigurationSupport，完成很多组件的实例化，包括HandlerMapping、HandlerAdapter、视图解析器viewResolver、异常处理器exceptionResolver，
 并且提供了很多钩子方法，比如添加拦截器、添加跨域映射、配置异常处理器等方法

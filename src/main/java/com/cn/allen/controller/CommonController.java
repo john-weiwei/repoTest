@@ -21,9 +21,8 @@ public class CommonController {
 
 
     @RequestMapping("success")
-    @ResponseBody
     public String success() {
-        return "success";
+        return "ok_zh";
     }
 
 }
