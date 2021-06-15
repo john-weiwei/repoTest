@@ -208,7 +208,12 @@ springMvc调用流程（SpringServletContainerInitializer，spi的思想）
             6.1.6、将类（common）和方法（index）上的@RequestMapping的value参数值合并（例如：common/index），重新创建一个新的RequestMappingInfo对象保存
             6.1.7、遍历得到methods，调用AbstractHandlerMethodMapping -> registerHandlerMethod() -> register方法注册到mappingRegistry容器中（MappingRegistry）
             6.1.8、调用createHandlerMethod()方法把method和对应的handler（bean实例）创建一个HandlerMethod对象进行保存，放入mappingLookup（Map<T, HandlerMethod>，这里T是RequestMappingInfo）容器中
-            6.1.9、
+            6.1.9、根据名称的策略使用处理方法handlerMethod和映射的路径mapping提取名称，例如CommonController.success()，提取的名称是CC#success，
+            加入nameLookup（Map<String, List<HandlerMethod>>）容器
+            6.1.10、调用initCorsConfiguration()初始化跨域配置信息
+                6.1.10.1、执行createHandlerMethod方法创建HandlerMethod对象
+                6.1.10.2、收集类以及方法上的@CrossOrigin的注解，执行updateCorsConfig方法添加请求来源，http方法，以及其他的请求头
+                6.1.10.3、执行applyPermitDefaultValues方法应用cors的默认值
 
 SpringMvc核心类WebMvcConfigurationSupport，完成很多组件的实例化，包括HandlerMapping、HandlerAdapter、视图解析器viewResolver、异常处理器exceptionResolver，
 并且提供了很多钩子方法，比如添加拦截器、添加跨域映射、配置异常处理器等方法
