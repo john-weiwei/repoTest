@@ -233,8 +233,11 @@ springMvc调用流程（SpringServletContainerInitializer，spi的思想）
         7.11、执行AbstractView -> render()方法准备给定指定模型的视图，与静态属性和RequestContext属性进行合并
         7.12、调用AbstractView -> prepareResponse方法准备响应头
         7.13、调用InternalResourceView -> renderMergedOutputModel方法渲染指定模型的内部资源，包括将模型设置为请求属性
-        7.14、执行ApplicationDispatcher -> forward -> doForward()方法将此请求和响应转发给另一个资源去处理，请求完成
-        7.15、资源的释放
+        7.14、执行ApplicationDispatcher -> forward -> doForward()方法将此请求和响应转发给另一个资源去处理，根据是http的调度器跳转，还是http的路径转发对请求进行包装
+        7.15、执行ApplicationDispatcher -> processRequest -> invoke()方法通过RequestDispatcher所代表的资源处理相关的请求，并创建相关的响应，
+        包括分配Servlet实例处理请求、获取过滤器链
+        7.16、执行ApplicationFilterChain -> doFilter() -> internalDoFilter()方法调用过滤器链，最后执行Servlet的service方法完成业务逻辑
+        7.17、资源的释放
 
 SpringMvc的执行过程：访问url（..../common/success）先执行ApplicationFilterChain -> doFilter()过滤器方法，再执行到
 HttpServlet -> service方法

@@ -17,7 +17,7 @@ import javax.sql.DataSource;
  * @Description:
  */
 @Configuration
-@EnableTransactionManagement
+@EnableTransactionManagement(proxyTargetClass = true)
 @MapperScan(basePackages = "com.cn.allen.mapper",annotationClass = Repository.class)
 public class EnableTransactionBean {
 
